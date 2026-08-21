@@ -160,7 +160,47 @@ Dựa trên các yêu cầu nghiệp vụ và các bên liên quan, hệ thống
 
 
 
-### Sơ đồ Sơ đồ Tư duy Các bên Liên quan (Stakeholders Mindmap)
+### 7. Sơ đồ UseCase Diagram & Stakeholders
+
+#### 🚖 Nền tảng đặt xe CAB System - Use Case Diagram
+```mermaid
+graph TD
+    subgraph CAB ["Hệ thống CAB System"]
+        UC1[Đăng ký / Đăng nhập]
+        UC2[Tạo yêu cầu đặt xe]
+        UC3[Theo dõi trạng thái chuyến đi]
+        UC4[Thanh toán chuyến đi]
+        UC5[Đánh giá tài xế]
+        UC6[Cập nhật trạng thái sẵn sàng]
+        UC7[Nhận & Xử lý chuyến đi]
+        UC8[Cập nhật trạng thái chuyến]
+        UC9[Tìm & Phân công tài xế]
+        UC10[Tính cước phí]
+    end
+
+    Customer((Khách hàng))
+    Driver((Tài xế))
+    Gateway[Cổng thanh toán thứ 3]
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC4
+    Customer --> UC5
+
+    Driver --> UC1
+    Driver --> UC6
+    Driver --> UC7
+    Driver --> UC8
+
+    UC2 -.->|include| UC9
+    UC8 -.->|include| UC10
+    UC4 <--> Gateway
+
+```
+
+#### 🧠 Sơ đồ Tư duy Các bên Liên quan (Stakeholders Mindmap)
+
 ```mermaid
 mindmap
   root((Các bên liên quan<br/>CAB System))
@@ -188,3 +228,111 @@ mindmap
       Nhà cung cấp thanh toán
         Xử lý giao dịch điện tử an toàn
         Xác nhận kết quả thanh toán
+
+```
+
+```
+
+
+```
+
+## 8. Đặc tả Use Case (Use Case Specification)
+
+### 8.1. Đặc tả Use Case: Tạo yêu cầu đặt xe (Book a Ride)
+* **Mô tả ngắn:** Khách hàng nhập thông tin hành trình, chọn loại dịch vụ và gửi yêu cầu để hệ thống khởi tạo chuyến đi.
+* **Tác nhân chính:** Khách hàng (Customer).
+* **Tiền điều kiện:** Khách hàng đã đăng nhập tài khoản thành công.
+* **Hậu điều kiện:** Yêu cầu đặt xe được tạo trên hệ thống, bắt đầu kích hoạt quy trình tìm kiếm tài xế.
+
+| STT | Luồng chính (Main Flow) |
+| :--- | :--- |
+| 1 | Khách hàng chọn chức năng "Đặt xe" trên ứng dụng. |
+| 2 | Khách hàng nhập điểm đón, điểm đến và chọn loại xe/dịch vụ. |
+| 3 | Hệ thống tính toán, hiển thị quãng đường và cước phí dự kiến. |
+| 4 | Khách hàng chọn phương thức thanh toán (Tiền mặt / Điện tử) và xác nhận gửi yêu cầu. |
+| 5 | Hệ thống ghi nhận chuyến đi, chuyển trạng thái sang "Đang tìm tài xế" và gọi thuật toán phân công[cite: 1]. |
+| 6 | Khách hàng nhận được thông báo hệ thống đang xử lý tìm tài xế[cite: 1]. |
+
+| Mã lỗi / Luồng ngoại lệ | Luồng thay thế (Alternative / Exception Flow) |
+| :--- | :--- |
+| **E1: Nhập thiếu / sai vị trí** | Hệ thống cảnh báo vị trí không hợp lệ và yêu cầu khách hàng chọn lại từ bản đồ/gợi ý. |
+| **E2: Không tìm thấy tài xế** | Nếu qua hết danh sách tài xế ưu tiên mà không ai nhận, hệ thống thông báo "Không tìm thấy tài xế" và hỏi khách hàng có muốn đặt lại không[cite: 1]. |
+
+---
+
+### 8.2. Đặc tả Use Case: Tiếp nhận và thực hiện chuyến đi (Process Ride)
+* **Mô tả ngắn:** Tài xế nhận thông báo chuyến đi, chấp nhận chuyến và cập nhật tiến trình cho đến khi hoàn thành[cite: 1].
+* **Tác nhân chính:** Tài xế (Driver)[cite: 1].
+* **Tiền điều kiện:** Tài xế đang ở trạng thái "Sẵn sàng nhận chuyến" và có vị trí GPS hợp lệ[cite: 1].
+* **Hậu điều kiện:** Chuyến đi hoàn tất, hệ thống chuyển sang bước tính cước và thanh toán[cite: 1].
+
+| STT | Luồng chính (Main Flow) |
+| :--- | :--- |
+| 1 | Tài xế nhận được thông báo đề xuất chuyến đi mới kèm điểm đón/đến[cite: 1]. |
+| 2 | Tài xế chọn "Chấp nhận" chuyến đi trong thời gian quy định[cite: 1]. |
+| 3 | Hệ thống cập nhật trạng thái chuyến sang "Đã có tài xế" và thông báo cho khách hàng[cite: 1]. |
+| 4 | Tài xế di chuyển đến điểm đón và ấn cập nhật "Đã đến điểm đón"[cite: 1]. |
+| 5 | Khi khách lên xe, tài xế ấn cập nhật "Đã đón khách / Đang di chuyển"[cite: 1]. |
+| 6 | Đến nơi, tài xế ấn "Hoàn thành chuyến đi", hệ thống ghi nhận mốc thời gian kết thúc[cite: 1]. |
+
+| Mã lỗi / Luồng ngoại lệ | Luồng thay thế (Alternative / Exception Flow) |
+| :--- | :--- |
+| **E1: Tài xế từ chối / Hết thời gian**| Nếu tài xế ấn "Từ chối" hoặc không phản hồi sau thời gian timeout, hệ thống tự động chuyển yêu cầu sang tài xế tiếp theo mà khách hàng không cần tạo lại lệnh đặt[cite: 1]. |
+
+---
+
+## 9. Phân tích Quy trình Nghiệp vụ (Business Process Analysis)
+
+Quy trình nghiệp vụ cốt lõi từ khi Khách hàng gửi yêu cầu đến khi Hoàn tất chuyến đi và Đánh giá:
+
+```mermaid
+flowchart TD
+    A[Khách hàng nhập lộ trình & Đặt xe] --> B[Hệ thống tính cước phí dự kiến]
+    B --> C[Khách hàng xác nhận tạo yêu cầu]
+    C --> D[Hệ thống lọc danh sách tài xế phù hợp]
+    
+    D --> E{Tìm tài xế ưu tiên gần nhất}
+    E -->|Gửi thông báo| F[Tài xế nhận đề xuất]
+    
+    F --> G{Tài xế chấp nhận?}
+    G -->|Từ chối / Timeout| H{Còn tài xế khác?}
+    H -->|Có| D
+    H -->|Không| I[Thông báo không tìm thấy tài xế]
+    
+    G -->|Chấp nhận| J[Hệ thống ghép chuyến & Thông báo cho Khách]
+    J --> K[Tài xế cập nhật: Đã đến điểm đón]
+    K --> L[Tài xế cập nhật: Đã đón khách & Di chuyển]
+    L --> M[Tài xế chọn: Hoàn thành chuyến]
+    
+    M --> N[Hệ thống tính tổng cước chính thức]
+    N --> O{Phương thức thanh toán}
+    O -->|Tiền mặt| P[Khách trả tiền mặt cho tài xế]
+    O -->|Thanh toán điện tử| Q[Gọi API Cổng thanh toán bên thứ 3]
+    
+    Q --> R{Thanh toán thành công?}
+    R -->|Thất bại| S[Thông báo lỗi & Cho phép xử lý thanh toán lại]
+    S --> Q
+    
+    R -->|Thành công| T[Gửi hóa đơn / Kết quả thanh toán]
+    P --> T
+    T --> U[Khách hàng đánh giá tài xế]
+```
+
+```
+
+
+```
+## 10. Phân tích các Quy tắc Nghiệp vụ (Business Rules)
+### 10.1. Quy tắc Ưu tiên và Phân công Tài xế (Driver Matching Rules)
+*BR_MATCH_01 (Xác định tài xế phù hợp): Chỉ đề xuất chuyến đi cho tài xế thỏa mãn đồng thời các điều kiện: đang ở trạng thái "Sẵn sàng", loại phương tiện phù hợp với dịch vụ khách chọn và có khoảng cách GPS đến điểm đón trong bán kính cho phép].
+*BR_MATCH_02 (Ưu tiên theo Rating & Khoảng cách):Hệ thống tính điểm ưu tiên $Score = (Weight_1 \times Rating) - (Weight_2 \times Distance)$.Tài xế có điểm Đánh giá (Rating) cao hơn và khoảng cách gần hơn sẽ được ưu tiên nhận thông báo chuyến đi trước
+*BR_MATCH_03 (Xử lý Từ chối / Timeout):Mỗi tài xế có tối đa $N$ giây (ví dụ: 15-30 giây) để phản hồi chấp nhận hoặc từ chối[cite: 1].Nếu tài xế từ chối hoặc quá thời gian không phản hồi, hệ thống chuyển sang tài xế có điểm ưu tiên kế tiếp mà không làm gián đoạn trải nghiệm của khách hàng
+
+### 10.2. Quy tắc Tính cước và Thanh toán (Pricing & Payment Rules)
+*BR_PAY_01 (Tính cước phí): Cước phí chuyến đi được tính dựa trên: Cước phí mở cửa + (Quãng đường thực tế/dự kiến $\times$ Đơn giá theo loại xe) + Phụ phí giờ cao điểm (nếu có).
+*BR_PAY_02 (Bảo mật thông tin thanh toán): Hệ thống CAB không lưu trữ bất kỳ thông tin nhạy cảm nào về thẻ/tài khoản ngân hàng của người dùng. Toàn bộ giao dịch điện tử được xử lý thông qua Tokenization của Cổng thanh toán bên thứ ba
+*BR_PAY_03 (Xử lý giao dịch lỗi): Khi thanh toán điện tử thất bại, hệ thống gửi thông báo lỗi tức thì và hỗ trợ khách hàng thử lại hoặc chuyển đổi sang thanh toán tiền mặt theo chính sách
+
+### 10.3. Quy tắc Thông báo và Vận hành (Notification & Operation Rules)
+*BR_NOTI_01 (Thông báo thời gian thực): Thông báo PUSH/SMS/App phải được gửi tự động tại các mốc: Đã đặt xe, Đã có tài xế, Tài xế đã tới điểm đón, Chuyến đi hoàn thành, Kết quả thanh toán
+*BR_SEC_01 (Xác thực và Truy vết): Tất cả tác nhân phải được xác thực trước khi thực hiện giao dịch; các thao tác quản trị hoặc cập nhật trạng thái quan trọng phải được ghi Log (Audit Log) để kiểm tra sự cố
