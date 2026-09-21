@@ -427,7 +427,8 @@ sequenceDiagram
     Note over C, B: Bước 5: Đánh giá dịch vụ
     C->>B: Gửi đánh giá sao & Bình luận về chuyến đi
     end
+```
 
 ### 10.3. Quy tắc Thông báo và Vận hành (Notification & Operation Rules)
-*BR_NOTI_01 (Thông báo thời gian thực): Thông báo PUSH/SMS/App phải được gửi tự động tại các mốc: Đã đặt xe, Đã có tài xế, Tài xế đã tới điểm đón, Chuyến đi hoàn thành, Kết quả thanh toán
-*BR_SEC_01 (Xác thực và Truy vết): Tất cả tác nhân phải được xác thực trước khi thực hiện giao dịch; các thao tác quản trị hoặc cập nhật trạng thái quan trọng phải được ghi Log (Audit Log) để kiểm tra sự cố
+* **BR_NOTI_01 (Thông báo thời gian thực):** Thông báo PUSH/SMS/App phải được gửi tự động tại các mốc: Đã đặt xe, Đã có tài xế, Tài xế đã tới điểm đón, Chuyến đi hoàn thành, Kết quả thanh toán.
+* **BR_SEC_01 (Xác thực và Truy vết):** Tất cả tác nhân phải được xác thực trước khi thực hiện giao dịch; các thao tác quản trị hoặc cập nhật trạng thái quan trọng phải được ghi Log (Audit Log) để kiểm tra sự cố.
