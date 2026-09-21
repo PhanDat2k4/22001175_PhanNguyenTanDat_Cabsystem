@@ -362,6 +362,8 @@ Hệ thống **CAB System** được phân rã dựa trên **nghiệp vụ (Busi
 
 ### 1. Sơ đồ Luồng Nghiệp vụ (Sequence Diagram)
 
+### 1. Sơ đồ Luồng Nghiệp vụ (Sequence Diagram)
+
 ```mermaid
 sequenceDiagram
     autonumber
