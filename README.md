@@ -333,6 +333,99 @@ flowchart TD
 *BR_PAY_02 (Bảo mật thông tin thanh toán): Hệ thống CAB không lưu trữ bất kỳ thông tin nhạy cảm nào về thẻ/tài khoản ngân hàng của người dùng. Toàn bộ giao dịch điện tử được xử lý thông qua Tokenization của Cổng thanh toán bên thứ ba
 *BR_PAY_03 (Xử lý giao dịch lỗi): Khi thanh toán điện tử thất bại, hệ thống gửi thông báo lỗi tức thì và hỗ trợ khách hàng thử lại hoặc chuyển đổi sang thanh toán tiền mặt theo chính sách
 
+buổi 4
+# KẾT QUẢ PHÂN RÃ KIẾN TRÚC CAB SYSTEM THEO DDD (DOMAIN-DRIVEN DESIGN)
+
+## I. TƯ TƯỞNG VÀ NGUYÊN TẮC PHÂN RÃ (DOMAIN-DRIVEN DESIGN)
+
+Hệ thống **CAB System** được phân rã dựa trên **nghiệp vụ (Business Process)** thay vì cấu trúc mã nguồn hay bảng cơ sở dữ liệu dùng chung. Kiến trúc tuân thủ hai nguyên tắc thiết kế hiện đại:
+
+*   **High Cohesion (Độ gắn kết cao):** Mỗi Sub-domain chỉ tập trung giải quyết đúng và trọn vẹn nghiệp vụ cốt lõi của mình, không ôm đồm hay can thiệp vào nhiệm vụ của Sub-domain khác.
+*   **Loose Coupling (Độ phụ thuộc thấp):** Các Sub-domain liên kết rời rạc và giao tiếp thông qua API/Event. Nếu một Service gặp sự cố (ví dụ: Notification hoặc Payment), các chức năng cốt lõi khác vẫn hoạt động bình thường, giúp hệ thống dễ dàng mở rộng và triển khai độc lập.
+*   **Database per Service:** Mỗi Sub-domain sở hữu và toàn quyền quản lý Cơ sở dữ liệu (Database) riêng biệt, không cho phép truy vấn trực tiếp chéo DB giữa các dịch vụ.
+
+---
+
+## II. DANH SÁCH CÁC SUB-DOMAIN VÀ DATABASE RIÊNG
+
+| STT | Sub-domain | Chức năng cốt lõi (Business Responsibility) | Cơ sở dữ liệu riêng (Database per Service) |
+| :---: | :--- | :--- | :--- |
+| **1** | **User Sub-domain** | • Đăng ký, đăng nhập và xác thực người dùng (Khách hàng, Tài xế, Nhân viên vận hành).<br>• Quản lý thông tin cá nhân.<br>• Phân quyền truy cập (RBAC) cho tài khoản quản trị. | **`User_DB`**<br>• `Users`<br>• `Roles_Permissions` |
+| **2** | **Driver & Vehicle Sub-domain** | • Quản lý hồ sơ tài xế, bằng lái và thông tin phương tiện.<br>• Quản lý trạng thái hoạt động (Sẵn sàng / Đang bận).<br>• Lưu vết và cập nhật vị trí GPS thời gian thực của tài xế. | **`Driver_DB`**<br>• `Drivers`<br>• `Vehicles`<br>• `Driver_Locations` |
+| **3** | **Booking & Matching Sub-domain** | • Tiếp nhận yêu cầu đặt chuyến đi từ Khách hàng.<br>• Thực hiện thuật toán quét và ghép đôi (Matching) tài xế phù hợp.<br>• Quản lý luồng chuyển trạng thái chuyến đi & lưu lịch sử, đánh giá sau chuyến. | **`Booking_DB`**<br>• `Bookings`<br>• `Ratings_Reviews` |
+| **4** | **Billing & Payment Sub-domain** | • Tính toán cước phí chuyến đi dựa trên khoảng cách, thời gian và loại xe.<br>• Tích hợp thanh toán điện tử (Cổng thanh toán) & tiền mặt.<br>• Xử lý giao dịch lỗi, cho phép thử lại và lưu vết lịch sử giao dịch. | **`Payment_DB`**<br>• `Invoices`<br>• `Transactions` |
+| **5** | **Notification Sub-domain** | • Quản lý và gửi thông báo đa kênh (Push Notification, SMS, Email).<br>• Kích hoạt thông báo tự động theo các sự kiện trong quy trình đặt xe. | **`Notification_DB`**<br>• `Notification_Templates`<br>• `Notification_Logs` |
+
+---
+
+## III. SƠ ĐỒ TƯƠNG TÁC GIỮA CÁC SUB-DOMAIN (BUSINESS PROCESS)
+
+### 1. Sơ đồ Luồng Nghiệp vụ (Sequence Diagram)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Khách hàng (Customer)
+    participant U as User Domain
+    participant B as Booking Domain
+    participant D as Driver Domain
+    participant P as Payment Domain
+    participant N as Notification Domain
+    actor Dr as Tài xế (Driver)
+
+    %% 1. Đăng nhập & Xác thực
+    rect rgb(240, 248, 255)
+    Note over C, U: Bước 1: Xác thực người dùng
+    C->>U: Đăng nhập / Xác thực Token
+    U-->>C: Trả về trạng thái hợp lệ
+    end
+
+    %% 2. Tạo chuyến & Tìm tài xế
+    rect rgb(255, 250, 240)
+    Note over C, Dr: Bước 2: Đặt xe & Ghép đôi tài xế
+    C->>B: Tạo yêu cầu đặt xe (Điểm đón, Điểm đến, Loại xe)
+    B->>D: Truy vấn danh sách tài xế gần nhất & sẵn sàng
+    D-->>B: Trả về danh sách tài xế phù hợp (Vị trí, Trạng thái)
+    B->>Dr: Gửi thông báo mời nhận chuyến tới Tài xế
+    alt Tài xế chấp nhận
+        Dr-->>B: Chấp nhận chuyến đi
+        B->>N: Trigger sự kiện "Đã tìm thấy tài xế"
+        N->>C: Bắn thông báo: Tài xế đang đến điểm đón
+    else Tài xế từ chối / Hết thời gian chờ
+        Dr-->>B: Từ chối / Timeout
+        B->>B: Tự động chuyển qua đề xuất tài xế tiếp theo
+    end
+    end
+
+    %% 3. Thực hiện chuyến đi
+    rect rgb(240, 255, 240)
+    Note over Dr, B: Bước 3: Di chuyển & Cập nhật trạng thái
+    Dr->>B: Cập nhật "Đã tới điểm đón"
+    B->>N: Trigger sự kiện "Tài xế đã đến"
+    N->>C: Bắn thông báo cho Khách hàng
+    Dr->>B: Cập nhật "Đón khách thành công - Đang di chuyển"
+    Dr->>B: Cập nhật "Hoàn thành chuyến đi"
+    end
+
+    %% 4. Tính cước & Thanh toán
+    rect rgb(255, 240, 245)
+    Note over B, N: Bước 4: Tính cước & Thanh toán
+    B->>P: Yêu cầu tính cước & Khởi tạo giao dịch
+    P->>P: Tính cước dựa trên thông tin chuyến đi
+    P->>C: Yêu cầu thanh toán (Tiền mặt / Thẻ / Chuyển khoản)
+    C->>P: Xác nhận thanh toán thành công
+    P-->>B: Trả kết quả thanh toán thành công
+    P->>N: Trigger sự kiện "Thanh toán thành công"
+    N->>C: Gửi hóa đơn & Thông báo thanh toán thành công
+    N->>Dr: Thông báo nhận tiền thành công
+    end
+
+    %% 5. Đánh giá sau chuyến
+    rect rgb(245, 245, 245)
+    Note over C, B: Bước 5: Đánh giá dịch vụ
+    C->>B: Gửi đánh giá sao & Bình luận về chuyến đi
+    end
+
 ### 10.3. Quy tắc Thông báo và Vận hành (Notification & Operation Rules)
 *BR_NOTI_01 (Thông báo thời gian thực): Thông báo PUSH/SMS/App phải được gửi tự động tại các mốc: Đã đặt xe, Đã có tài xế, Tài xế đã tới điểm đón, Chuyến đi hoàn thành, Kết quả thanh toán
 *BR_SEC_01 (Xác thực và Truy vết): Tất cả tác nhân phải được xác thực trước khi thực hiện giao dịch; các thao tác quản trị hoặc cập nhật trạng thái quan trọng phải được ghi Log (Audit Log) để kiểm tra sự cố
